@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import time
 
+
 class HandDetector:
     def __init__(self, mode=False, max_hands=2, detection_confidence=0.5, tracking_confidence=0.5):
         self.mode = mode
@@ -69,7 +70,6 @@ class HandDetector:
         return landmark_list
 
 
-
 # To use the code, copy everything in the main function and import the necessary things
 def main():
     # Time variables for calculating FPS
@@ -115,5 +115,6 @@ def main():
         cv2.imshow("Image", cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE))
         cv2.waitKey(1)
 
-if __name__ = "__main__":
+
+if __name__ == "__main__":
     main()
