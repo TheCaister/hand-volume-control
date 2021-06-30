@@ -85,7 +85,7 @@ while True:
                 1, (0, 255, 0), 2)
 
 
-# Getting the FPS
+    # Getting the FPS
     current_time = time.time()
     fps = 1 / (current_time - previous_time)
     previous_time = current_time

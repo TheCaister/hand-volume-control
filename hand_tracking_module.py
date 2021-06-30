@@ -19,10 +19,13 @@ class HandDetector:
         # Getting drawing utilities for easy hand drawing
         self.mp_draw = mp.solutions.drawing_utils
 
+        # List of tip IDs
+        self.tip_ids = [4, 8, 12, 16, 20]
+
     # Function for detecting hands
     def find_hands(self, img, draw=True):
-        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        self.results = self.hands.process(imgRGB)
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        self.results = self.hands.process(img_rgb)
 
         # print(results.multi_hand_landmarks)
 
@@ -38,9 +41,13 @@ class HandDetector:
 
     # Function for finding the position of a single hand
     def find_position(self, img, hand_number=0, draw=True):
+        # List of all x and y values
+        x_list = []
+        y_list = []
+        bounding_box = []
 
         # List of every detected landmark's id and coordinates
-        landmark_list = []
+        self.landmark_list = []
 
         # If hands are detected, loop through them
         if self.results.multi_hand_landmarks:
@@ -55,19 +62,53 @@ class HandDetector:
                 # This is so that we can get precise pixel locations
                 height, width, channels = img.shape
                 centre_x, centre_y = int(landmark.x * width), int(landmark.y * height)
+
+                # Adding landmarks coordinates to the lists
+                x_list.append(centre_x)
+                y_list.append(centre_y)
+
                 # print("ID: " + str(id) + " X: " + str(centre_x) + " Y: " + str(centre_y))
 
-                landmark_list.append([id, centre_x, centre_y])
+                self.landmark_list.append([id, centre_x, centre_y])
 
-                if draw:
-                    # Testing by drawing circles on the specified landmarks
-                    # 0 is the bottom of the hand, 4 is the tip of the thumb
-                    if id == 0:
-                        cv2.circle(img, (centre_x, centre_y), 25, (255, 0, 255), cv2.FILLED)
-                    elif id == 4:
-                        cv2.circle(img, (centre_x, centre_y), 25, (255, 0, 255), cv2.FILLED)
+                # if draw:
+                #     # Testing by drawing circles on the specified landmarks
+                #     # 0 is the bottom of the hand, 4 is the tip of the thumb
+                #     if id == 0:
+                #         cv2.circle(img, (centre_x, centre_y), 25, (255, 0, 255), cv2.FILLED)
+                #     elif id == 4:
+                #         cv2.circle(img, (centre_x, centre_y), 25, (255, 0, 255), cv2.FILLED)
 
-        return landmark_list
+            # Getting the minimum and maximum x and y values to create a bounding box for the hand
+            x_minimum, x_maximum = min(x_list), max(x_list)
+            y_minimum, y_maximum = min(y_list), max(y_list)
+            bounding_box = x_minimum, y_minimum, x_maximum, y_maximum
+
+        # Return list of landmarks and the bounding box
+        return self.landmark_list, bounding_box
+
+    def fingers_up(self):
+        fingers = []
+
+        # Get the x value of thumb tips and their corresponding lower knuckles
+        # Code for the thumb is different since it's not like the other fingers
+        # If the tip is to the right of the lower knuckle, we can say the thumb is up
+        # Have yet to check for handedness
+        if self.landmark_list[self.tip_ids[0]][1] > self.landmark_list[self.tip_ids[0] - 1][1]:
+            fingers.append(1)
+        else:
+            fingers.append(0)
+
+        for id in range(1, 5):
+            # Get the y value of fingertips and their corresponding lower knuckles
+            # If the tip is above the lower knuckle, we can say it's up
+            # Then append it to the fingers list
+            if self.landmark_list[self.tip_ids[id]][2] < self.landmark_list[self.tip_ids[id] - 2][2]:
+                fingers.append(1)
+            else:
+                fingers.append(0)
+
+        return fingers
 
 
 # To use the code, copy everything in the main function and import the necessary things
