@@ -42,40 +42,45 @@ while True:
     # Find hands and draw landmarks on img
     img = detector.find_hands(img)
 
-    landmarks_list = detector.find_position(img, draw=False)
+    landmarks_list, bounding_box = detector.find_position(img, draw=False)
 
     # Only process if there is something in the landmark list
     if len(landmarks_list) != 0:
         print(landmarks_list)
 
-        # Getting positions of the index and thumb tips
-        x1, y1 = landmarks_list[4][1], landmarks_list[4][2]
-        x2, y2 = landmarks_list[8][1], landmarks_list[8][2]
+        # Getting the area of the bounding box
+        bounding_box_area = (bounding_box[2] - bounding_box[0]) * (bounding_box[3] - bounding_box[1]) // 100
 
-        # Getting the centre point of the two positions
-        cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
+        # You can only change the volume when the hand is a certain size in the screen
+        if 250 < bounding_box_area < 1000:
+            # Getting positions of the index and thumb tips
+            x1, y1 = landmarks_list[4][1], landmarks_list[4][2]
+            x2, y2 = landmarks_list[8][1], landmarks_list[8][2]
 
-        # Drawing circles on these positions
-        cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
-        cv2.circle(img, (x2, y2), 15, (255, 0, 255), cv2.FILLED)
-        # Drawing a line and a circle between the two tips
-        cv2.line(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
-        cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
+            # Getting the centre point of the two positions
+            cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
 
-        # Getting the length between the two points
-        length = math.hypot(x2 - x1, y2 - y1)
+            # Drawing circles on these positions
+            cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x2, y2), 15, (255, 0, 255), cv2.FILLED)
+            # Drawing a line and a circle between the two tips
+            cv2.line(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+            cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
 
-        # Convert length in the hand range to volume range using interpolation
-        vol = np.interp(length, [50, 300], [minimum_volume, maximum_volume])
-        # Also converting to range of height of the volume bar
-        volume_bar = np.interp(length, [50, 300], [400, 150])
-        # And converting to percentage
-        volume_percentage = np.interp(length, [50, 300], [0, 100])
+            # Getting the length between the two points
+            length = math.hypot(x2 - x1, y2 - y1)
 
-        volume.SetMasterVolumeLevel(vol, None)
+            # Convert length in the hand range to volume range using interpolation
+            vol = np.interp(length, [50, 300], [minimum_volume, maximum_volume])
+            # Also converting to range of height of the volume bar
+            volume_bar = np.interp(length, [50, 300], [400, 150])
+            # And converting to percentage
+            volume_percentage = np.interp(length, [50, 300], [0, 100])
 
-        if length < 50:
-            cv2.circle(img, (cx, cy), 15, (0, 255, 0), cv2.FILLED)
+            volume.SetMasterVolumeLevel(vol, None)
+
+            if length < 50:
+                cv2.circle(img, (cx, cy), 15, (0, 255, 0), cv2.FILLED)
 
     # Drawing a rectangle representing the volume
     cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)

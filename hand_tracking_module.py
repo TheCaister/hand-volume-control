@@ -84,6 +84,13 @@ class HandDetector:
             y_minimum, y_maximum = min(y_list), max(y_list)
             bounding_box = x_minimum, y_minimum, x_maximum, y_maximum
 
+            # Draw bounding box if draw=True
+            # Make the box slightly bigger than the coordinates stored since they stop at the landmarks,
+            # not the edges of the hands
+            if draw:
+                cv2.rectangle(img, (bounding_box[0] - 20, bounding_box[1] - 20),
+                              (bounding_box[2] + 20, bounding_box[3] + 20), (0, 255, 0), 2)
+
         # Return list of landmarks and the bounding box
         return self.landmark_list, bounding_box
 
