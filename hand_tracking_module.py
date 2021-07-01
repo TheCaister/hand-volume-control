@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import time
+import math
 
 
 class HandDetector:
@@ -116,6 +117,27 @@ class HandDetector:
                 fingers.append(0)
 
         return fingers
+
+    def find_distance(self, point1, point2, img, draw=True):
+        # Getting positions of the index and thumb tips
+        x1, y1 = self.landmarks_list[point1][1], self.landmarks_list[point1][2]
+        x2, y2 = self.landmarks_list[point2][1], self.landmarks_list[point2][2]
+
+        # Getting the centre point of the two positions
+        centre_x, centre_y = (x1 + x2) // 2, (y1 + y2) // 2
+
+        if draw:
+            # Drawing circles on these positions
+            cv2.circle(img, (x1, y1), 15, (255, 0, 255), cv2.FILLED)
+            cv2.circle(img, (x2, y2), 15, (255, 0, 255), cv2.FILLED)
+            # Drawing a line and a circle between the two tips
+            cv2.line(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+            cv2.circle(img, (centre_x, centre_y), 15, (255, 0, 255), cv2.FILLED)
+
+        # Getting the length between the two points
+        length = math.hypot(x2 - x1, y2 - y1)
+
+        return length, img, [x1, y1, x2, y2, centre_x, centre_y]
 
 
 # To use the code, copy everything in the main function and import the necessary things
