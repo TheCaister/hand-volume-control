@@ -21,6 +21,7 @@ maximum_volume = volume_range[1]
 vol = 0
 volume_bar = 400
 volume_percentage = 0
+color_volume = (255, 0, 0)
 
 ########################
 camera_width, camera_height = 640, 480
@@ -34,7 +35,8 @@ cap.set(4, camera_height)
 previous_time = 0
 
 # Making detector object, bumping up detection confidence the minimise flicker
-detector = htm.HandDetector(detection_confidence=0.7)
+# Also setting max hands to 1 to avoid unnecessary processing
+detector = htm.HandDetector(detection_confidence=0.7, max_hands=1)
 
 while True:
     success, img = cap.read()
@@ -57,15 +59,26 @@ while True:
             length, img, line_info = detector.find_distance(4, 8, img)
 
             # Also converting to range of height of the volume bar
-            volume_bar = np.interp(length, [50, 300], [400, 150])
+            volume_bar = np.interp(length, [50, 200], [400, 150])
             # And converting to percentage
-            volume_percentage = np.interp(length, [50, 300], [0, 100])
+            volume_percentage = np.interp(length, [50, 200], [0, 100])
 
-            # We can send decimal versions of percentages here (Values between 0 and 1)
-            volume.SetMasterVolumeLevelScalar(volume_percentage / 100, None)
+            # Reducing the resolution to avoid jitter in audio volume
+            smoothness = 10
+            volume_percentage = smoothness * round(volume_percentage / smoothness)
 
-            if length < 50:
+            # Finding which fingers are up
+            fingers = detector.fingers_up()
+
+            # Only change volume once pinky finger is down
+            # Change the volume text to indicate a change in volume
+            if not fingers[4]:
+                # We can send decimal versions of percentages here (Values between 0 and 1)
+                volume.SetMasterVolumeLevelScalar(volume_percentage / 100, None)
                 cv2.circle(img, (line_info[4], line_info[5]), 15, (0, 255, 0), cv2.FILLED)
+                color_volume = (0, 255, 0)
+            else:
+                color_volume = (255, 0, 0)
 
     # Drawing a rectangle representing the volume
     cv2.rectangle(img, (50, 150), (85, 400), (0, 255, 0), 3)
@@ -74,6 +87,9 @@ while True:
     cv2.putText(img, f'{int(volume_percentage)}', (40, 450), cv2.FONT_HERSHEY_SIMPLEX,
                 1, (0, 255, 0), 2)
 
+    current_volume = int(volume.GetMasterVolumeLevelScalar() * 100)
+    cv2.putText(img, f'Current Volume: {int(current_volume)}', (300, 50), cv2.FONT_HERSHEY_SIMPLEX,
+                1, (255, 0, 0), 2)
 
     # Getting the FPS
     current_time = time.time()
@@ -81,7 +97,7 @@ while True:
     previous_time = current_time
     # Drawing the FPS
     cv2.putText(img, f'FPS: {int(fps)}', (40, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                1, (255, 0, 0), 2)
+                1, color_volume, 2)
 
     cv2.imshow("Image", cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE))
     cv2.waitKey(1)
